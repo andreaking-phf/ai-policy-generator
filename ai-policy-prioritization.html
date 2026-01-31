@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Policy Priority Builder | Health Department Decision Tool</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --forest: #1a4d2e;
+            --sage: #4f7942;
+            --cream: #faf8f3;
+            --terracotta: #c1502e;
+            --gold: #d4a574;
+            --slate: #2d3e4e;
+            --mist: #e8ebe6;
+        }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: linear-gradient(135deg, var(--cream) 0%, var(--mist) 100%);
+            color: var(--slate);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            border-bottom: 3px solid var(--forest);
+        }
+        
+        h1 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--forest);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--sage);
+            font-weight: 500;
+        }
+        
+        .progress-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .progress-track {
+            height: 8px;
+            background: var(--mist);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--forest), var(--sage));
+            transition: width 0.4s ease;
+        }
+        
+        .progress-text {
+            font-size: 0.9rem;
+            color: var(--slate);
+            font-weight: 500;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--forest);
+        }
+        
+        .method-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .method-card {
+            background: var(--cream);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .method-card:hover {
+            border-color: var(--sage);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(79, 121, 66, 0.15);
+        }
+        
+        .method-card.selected {
+            border-color: var(--forest);
+            background: linear-gradient(135deg, var(--forest) 0%, var(--sage) 100%);
+            color: white;
+        }
+        
+        .method-card.selected .method-title {
+            color: white;
+        }
+        
+        .method-title {
+            font-family: 'Crimson Pro', serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--forest);
+            margin-bottom: 0.5rem;
+        }
+        
+        .method-desc {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+        
+        .priority-item {
+            background: var(--cream);
+            border: 2px solid var(--mist);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .priority-item:hover {
+            border-color: var(--sage);
+            box-shadow: 0 4px 12px rgba(79, 121, 66, 0.1);
+        }
+        
+        .priority-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .priority-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--forest);
+        }
+        
+        .priority-desc {
+            font-size: 0.9rem;
+            color: var(--slate);
+            margin-bottom: 1rem;
+        }
+        
+        .slider-container {
+            margin-top: 1rem;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--sage);
+            margin-bottom: 0.5rem;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--mist);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--forest);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: var(--sage);
+            transform: scale(1.2);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--forest);
+            cursor: pointer;
+            border: none;
+        }
+        
+        .drag-item {
+            background: white;
+            border: 2px solid var(--mist);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 0.8rem;
+            cursor: move;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        
+        .drag-item:hover {
+            border-color: var(--sage);
+            box-shadow: 0 4px 12px rgba(79, 121, 66, 0.15);
+        }
+        
+        .drag-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.98);
+        }
+        
+        .drag-item.drag-over {
+            border-color: var(--terracotta);
+            border-style: dashed;
+        }
+        
+        .drag-handle {
+            display: inline-block;
+            margin-right: 1rem;
+            color: var(--sage);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 2rem;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .comparison-option {
+            background: white;
+            border: 3px solid var(--mist);
+            border-radius: 12px;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .comparison-option:hover {
+            border-color: var(--sage);
+            transform: scale(1.02);
+        }
+        
+        .comparison-option.selected {
+            border-color: var(--forest);
+            background: linear-gradient(135deg, var(--forest) 0%, var(--sage) 100%);
+            color: white;
+        }
+        
+        .vs-divider {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--terracotta);
+        }
+        
+        .budget-container {
+            margin-top: 1.5rem;
+        }
+        
+        .budget-display {
+            background: var(--mist);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .budget-amount {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--forest);
+            font-family: 'Crimson Pro', serif;
+        }
+        
+        .budget-label {
+            font-size: 0.9rem;
+            color: var(--sage);
+        }
+        
+        .budget-slider {
+            margin-top: 1rem;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, var(--forest) 0%, var(--sage) 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 121, 66, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--forest);
+            border: 2px solid var(--forest);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--mist);
+        }
+        
+        .results-container {
+            animation: fadeIn 0.6s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .rank-item {
+            background: white;
+            border-left: 5px solid var(--gold);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .rank-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--forest);
+            font-family: 'Crimson Pro', serif;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .rank-content {
+            flex: 1;
+        }
+        
+        .rank-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--forest);
+            margin-bottom: 0.3rem;
+        }
+        
+        .rank-score {
+            font-size: 0.9rem;
+            color: var(--sage);
+            font-weight: 500;
+        }
+        
+        .tier-1 { border-left-color: var(--terracotta); }
+        .tier-2 { border-left-color: var(--gold); }
+        .tier-3 { border-left-color: var(--sage); }
+        .tier-4 { border-left-color: var(--mist); }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, #fff9f0 0%, #fff 100%);
+            border-left: 4px solid var(--gold);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        .info-box h3 {
+            color: var(--forest);
+            font-family: 'Crimson Pro', serif;
+            margin-bottom: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .comparison-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            .vs-divider { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>AI Policy Priority Builder</h1>
+            <p class="subtitle">Evidence-Based Decision Tool for State & Local Health Departments</p>
+        </header>
+
+        <div class="progress-bar">
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="progress-text" id="progressText">Step 1 of 3: Choose Your Method</div>
+        </div>
+
+        <!-- Step 1: Method Selection -->
+        <div id="step1" class="card">
+            <h2 style="font-family: 'Crimson Pro', serif; color: var(--forest); margin-bottom: 1.5rem;">Choose Your Prioritization Method</h2>
+            <div class="info-box">
+                <h3>Why Multiple Methods?</h3>
+                <p>Different methods suit different organizational cultures and decision-making styles. Each prevents the "everything is critical" problem through different mechanisms.</p>
+            </div>
+            
+            <div class="method-selector">
+                <div class="method-card" data-method="weighted">
+                    <div class="method-title">⚖️ Weighted Scoring</div>
+                    <div class="method-desc">Assign importance scores (1-10) to each element. Forces reflection on relative importance.</div>
+                </div>
+                
+                <div class="method-card" data-method="ranking">
+                    <div class="method-title">📊 Drag & Rank</div>
+                    <div class="method-desc">Physically order priorities from most to least important. Simple and intuitive.</div>
+                </div>
+                
+                <div class="method-card" data-method="pairwise">
+                    <div class="method-title">🔄 Pairwise Comparison</div>
+                    <div class="method-desc">Compare two elements at a time. Most rigorous, prevents ties effectively.</div>
+                </div>
+                
+                <div class="method-card" data-method="budget">
+                    <div class="method-title">💰 Budget Allocation</div>
+                    <div class="method-desc">Distribute 100 points across priorities. Forces hard trade-offs.</div>
+                </div>
+            </div>
+            
+            <button class="btn" id="startBtn" disabled>Begin Prioritization →</button>
+        </div>
+
+        <!-- Step 2: Prioritization Interface (Dynamic) -->
+        <div id="step2" class="card hidden">
+            <h2 style="font-family: 'Crimson Pro', serif; color: var(--forest); margin-bottom: 1.5rem;" id="step2Title"></h2>
+            <div id="prioritizationInterface"></div>
+            <div class="action-buttons">
+                <button class="btn" id="calculateBtn">Calculate Rankings →</button>
+                <button class="btn btn-secondary" id="backBtn">← Back</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Results -->
+        <div id="step3" class="card hidden">
+            <h2 style="font-family: 'Crimson Pro', serif; color: var(--forest); margin-bottom: 1.5rem;">Your Priority Rankings</h2>
+            <div class="info-box">
+                <h3>What's Next?</h3>
+                <p>These rankings will guide which policy elements to emphasize in your AI policy document. Higher-ranked items should receive more detailed treatment and stronger requirements.</p>
+            </div>
+            <div id="resultsContainer"></div>
+            <div class="action-buttons">
+                <button class="btn" id="downloadBtn">Download Results (JSON)</button>
+                <button class="btn" id="generatePolicyBtn">Generate Policy Framework →</button>
+                <button class="btn btn-secondary" id="startOverBtn">Start Over</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Policy elements data
+        const policyElements = [
+            {
+                id: 1,
+                name: "Data Privacy & Security",
+                description: "Protection of PHI/PII, secure data handling, HIPAA compliance",
+                tier: 1
+            },
+            {
+                id: 2,
+                name: "Bias, Equity & Discrimination",
+                description: "Fairness assessments, addressing disparities, equity impact",
+                tier: 1
+            },
+            {
+                id: 3,
+                name: "Transparency & Explainability",
+                description: "Disclosure requirements, model documentation, public reporting",
+                tier: 1
+            },
+            {
+                id: 4,
+                name: "Human Oversight & Accountability",
+                description: "Human-in-the-loop, professional judgment, clear responsibility",
+                tier: 1
+            },
+            {
+                id: 5,
+                name: "Accuracy & Validation",
+                description: "Performance testing, monitoring, quality assurance",
+                tier: 2
+            },
+            {
+                id: 6,
+                name: "Governance & Risk Management",
+                description: "Oversight committees, risk frameworks, approval processes",
+                tier: 2
+            },
+            {
+                id: 7,
+                name: "Training & Capacity Building",
+                description: "AI literacy, staff development, skills assessment",
+                tier: 2
+            },
+            {
+                id: 8,
+                name: "Use Case Appropriateness",
+                description: "Permitted vs. prohibited uses, boundaries, guardrails",
+                tier: 3
+            },
+            {
+                id: 9,
+                name: "Procurement & Vendor Management",
+                description: "Vendor selection, contracts, third-party risk assessment",
+                tier: 3
+            },
+            {
+                id: 10,
+                name: "Legal & Regulatory Compliance",
+                description: "Federal/state law compliance, civil rights protections",
+                tier: 3
+            },
+            {
+                id: 11,
+                name: "Community Engagement",
+                description: "Stakeholder consultation, public input, building trust",
+                tier: 4
+            },
+            {
+                id: 12,
+                name: "Sustainability & Evaluation",
+                description: "Long-term viability, cost-benefit, continuous improvement",
+                tier: 4
+            }
+        ];
+
+        // State management
+        let currentMethod = null;
+        let currentStep = 1;
+        let priorityData = {};
+        let rankings = [];
+
+        // Initialize
+        document.querySelectorAll('.method-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                currentMethod = card.dataset.method;
+                document.getElementById('startBtn').disabled = false;
+            });
+        });
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            currentStep = 2;
+            renderStep2();
+        });
+
+        document.getElementById('backBtn').addEventListener('click', () => {
+            currentStep = 1;
+            updateUI();
+        });
+
+        document.getElementById('calculateBtn').addEventListener('click', () => {
+            calculateRankings();
+            currentStep = 3;
+            renderResults();
+        });
+
+        document.getElementById('startOverBtn').addEventListener('click', () => {
+            currentStep = 1;
+            currentMethod = null;
+            priorityData = {};
+            rankings = [];
+            document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById('startBtn').disabled = true;
+            updateUI();
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const data = {
+                method: currentMethod,
+                timestamp: new Date().toISOString(),
+                rankings: rankings,
+                rawData: priorityData
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ai-policy-priorities-${Date.now()}.json`;
+            a.click();
+        });
+
+        document.getElementById('generatePolicyBtn').addEventListener('click', () => {
+            alert('Policy framework generation will be implemented in the next phase. Your rankings have been saved!');
+        });
+
+        function updateUI() {
+            document.getElementById('step1').classList.toggle('hidden', currentStep !== 1);
+            document.getElementById('step2').classList.toggle('hidden', currentStep !== 2);
+            document.getElementById('step3').classList.toggle('hidden', currentStep !== 3);
+            
+            const progress = ((currentStep - 1) / 2) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            
+            const stepTexts = [
+                'Step 1 of 3: Choose Your Method',
+                'Step 2 of 3: Prioritize Elements',
+                'Step 3 of 3: Review Results'
+            ];
+            document.getElementById('progressText').textContent = stepTexts[currentStep - 1];
+        }
+
+        function renderStep2() {
+            const interface = document.getElementById('prioritizationInterface');
+            const title = document.getElementById('step2Title');
+            
+            switch(currentMethod) {
+                case 'weighted':
+                    title.textContent = 'Rate Each Priority (1-10)';
+                    interface.innerHTML = renderWeightedInterface();
+                    break;
+                case 'ranking':
+                    title.textContent = 'Drag to Rank (Top to Bottom)';
+                    interface.innerHTML = renderRankingInterface();
+                    initializeDragAndDrop();
+                    break;
+                case 'pairwise':
+                    title.textContent = 'Compare Pairs';
+                    interface.innerHTML = renderPairwiseInterface();
+                    break;
+                case 'budget':
+                    title.textContent = 'Allocate 100 Points';
+                    interface.innerHTML = renderBudgetInterface();
+                    break;
+            }
+            
+            updateUI();
+        }
+
+        function renderWeightedInterface() {
+            return policyElements.map(element => `
+                <div class="priority-item">
+                    <div class="priority-header">
+                        <div class="priority-name">${element.name}</div>
+                    </div>
+                    <div class="priority-desc">${element.description}</div>
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Low Priority (1)</span>
+                            <span id="weight-${element.id}-value">5</span>
+                            <span>High Priority (10)</span>
+                        </div>
+                        <input type="range" min="1" max="10" value="5" 
+                               id="weight-${element.id}" 
+                               oninput="document.getElementById('weight-${element.id}-value').textContent = this.value">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderRankingInterface() {
+            const shuffled = [...policyElements].sort(() => Math.random() - 0.5);
+            return shuffled.map((element, index) => `
+                <div class="drag-item" draggable="true" data-id="${element.id}">
+                    <span class="drag-handle">☰</span>
+                    <strong>${element.name}</strong>
+                    <p style="margin: 0.5rem 0 0 2.5rem; font-size: 0.9rem; color: var(--slate);">${element.description}</p>
+                </div>
+            `).join('');
+        }
+
+        let pairwiseComparisons = [];
+        let currentPairIndex = 0;
+
+        function renderPairwiseInterface() {
+            // Generate all pairs
+            pairwiseComparisons = [];
+            for (let i = 0; i < policyElements.length; i++) {
+                for (let j = i + 1; j < policyElements.length; j++) {
+                    pairwiseComparisons.push([policyElements[i], policyElements[j]]);
+                }
+            }
+            currentPairIndex = 0;
+            priorityData.pairwiseScores = {};
+            policyElements.forEach(el => priorityData.pairwiseScores[el.id] = 0);
+            
+            return renderCurrentPair();
+        }
+
+        function renderCurrentPair() {
+            if (currentPairIndex >= pairwiseComparisons.length) {
+                return '<p style="text-align: center; font-size: 1.2rem; color: var(--forest);">✓ All comparisons complete!</p>';
+            }
+            
+            const [a, b] = pairwiseComparisons[currentPairIndex];
+            const progress = Math.round((currentPairIndex / pairwiseComparisons.length) * 100);
+            
+            return `
+                <div style="margin-bottom: 2rem; text-align: center;">
+                    <p style="color: var(--sage); font-weight: 600;">Comparison ${currentPairIndex + 1} of ${pairwiseComparisons.length} (${progress}%)</p>
+                </div>
+                <div class="comparison-container">
+                    <div class="comparison-option" onclick="selectPairwise(${a.id})">
+                        <h3 style="margin-bottom: 1rem; color: var(--forest);">${a.name}</h3>
+                        <p style="font-size: 0.9rem;">${a.description}</p>
+                    </div>
+                    <div class="vs-divider">VS</div>
+                    <div class="comparison-option" onclick="selectPairwise(${b.id})">
+                        <h3 style="margin-bottom: 1rem; color: var(--forest);">${b.name}</h3>
+                        <p style="font-size: 0.9rem;">${b.description}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectPairwise(winnerId) {
+            priorityData.pairwiseScores[winnerId]++;
+            currentPairIndex++;
+            document.getElementById('prioritizationInterface').innerHTML = renderCurrentPair();
+        }
+
+        function renderBudgetInterface() {
+            priorityData.budget = {};
+            policyElements.forEach(el => priorityData.budget[el.id] = 0);
+            
+            return `
+                <div class="budget-display">
+                    <div class="budget-amount" id="remainingBudget">100</div>
+                    <div class="budget-label">Points Remaining</div>
+                </div>
+                ${policyElements.map(element => `
+                    <div class="priority-item">
+                        <div class="priority-header">
+                            <div class="priority-name">${element.name}</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--forest);" id="budget-${element.id}-display">0</div>
+                        </div>
+                        <div class="priority-desc">${element.description}</div>
+                        <div class="budget-slider">
+                            <input type="range" min="0" max="100" value="0" 
+                                   id="budget-${element.id}" 
+                                   oninput="updateBudget(${element.id}, this.value)">
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function updateBudget(id, value) {
+            value = parseInt(value);
+            const oldValue = priorityData.budget[id] || 0;
+            const diff = value - oldValue;
+            
+            const totalAllocated = Object.values(priorityData.budget).reduce((sum, val) => sum + val, 0);
+            const newTotal = totalAllocated + diff;
+            
+            if (newTotal <= 100) {
+                priorityData.budget[id] = value;
+                document.getElementById(`budget-${id}-display`).textContent = value;
+                document.getElementById('remainingBudget').textContent = 100 - newTotal;
+            } else {
+                document.getElementById(`budget-${id}`).value = oldValue;
+            }
+        }
+
+        function initializeDragAndDrop() {
+            const items = document.querySelectorAll('.drag-item');
+            
+            items.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragend', handleDragEnd);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('drop', handleDrop);
+                item.addEventListener('dragenter', handleDragEnter);
+                item.addEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        let draggedElement = null;
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.drag-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            this.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            if (draggedElement !== this) {
+                const container = this.parentNode;
+                const allItems = [...container.querySelectorAll('.drag-item')];
+                const draggedIndex = allItems.indexOf(draggedElement);
+                const targetIndex = allItems.indexOf(this);
+                
+                if (draggedIndex < targetIndex) {
+                    container.insertBefore(draggedElement, this.nextSibling);
+                } else {
+                    container.insertBefore(draggedElement, this);
+                }
+            }
+            
+            return false;
+        }
+
+        function calculateRankings() {
+            rankings = [];
+            
+            switch(currentMethod) {
+                case 'weighted':
+                    policyElements.forEach(element => {
+                        const score = parseInt(document.getElementById(`weight-${element.id}`).value);
+                        rankings.push({
+                            ...element,
+                            score: score,
+                            method: 'weighted'
+                        });
+                    });
+                    rankings.sort((a, b) => b.score - a.score);
+                    break;
+                    
+                case 'ranking':
+                    const items = document.querySelectorAll('.drag-item');
+                    items.forEach((item, index) => {
+                        const id = parseInt(item.dataset.id);
+                        const element = policyElements.find(e => e.id === id);
+                        rankings.push({
+                            ...element,
+                            score: policyElements.length - index,
+                            method: 'ranking'
+                        });
+                    });
+                    break;
+                    
+                case 'pairwise':
+                    policyElements.forEach(element => {
+                        rankings.push({
+                            ...element,
+                            score: priorityData.pairwiseScores[element.id],
+                            method: 'pairwise'
+                        });
+                    });
+                    rankings.sort((a, b) => b.score - a.score);
+                    break;
+                    
+                case 'budget':
+                    policyElements.forEach(element => {
+                        rankings.push({
+                            ...element,
+                            score: priorityData.budget[element.id],
+                            method: 'budget'
+                        });
+                    });
+                    rankings.sort((a, b) => b.score - a.score);
+                    break;
+            }
+            
+            // Store in localStorage
+            localStorage.setItem('aiPolicyRankings', JSON.stringify({
+                method: currentMethod,
+                timestamp: new Date().toISOString(),
+                rankings: rankings
+            }));
+        }
+
+        function renderResults() {
+            const container = document.getElementById('resultsContainer');
+            
+            container.innerHTML = rankings.map((item, index) => {
+                let tierClass = '';
+                if (index < 3) tierClass = 'tier-1';
+                else if (index < 6) tierClass = 'tier-2';
+                else if (index < 9) tierClass = 'tier-3';
+                else tierClass = 'tier-4';
+                
+                let scoreDisplay = '';
+                switch(currentMethod) {
+                    case 'weighted':
+                        scoreDisplay = `Score: ${item.score}/10`;
+                        break;
+                    case 'ranking':
+                        scoreDisplay = `Position: ${index + 1} of ${rankings.length}`;
+                        break;
+                    case 'pairwise':
+                        scoreDisplay = `Wins: ${item.score}`;
+                        break;
+                    case 'budget':
+                        scoreDisplay = `Allocated: ${item.score} points`;
+                        break;
+                }
+                
+                return `
+                    <div class="rank-item ${tierClass}">
+                        <div class="rank-number">#${index + 1}</div>
+                        <div class="rank-content">
+                            <div class="rank-title">${item.name}</div>
+                            <div class="rank-score">${scoreDisplay} • ${item.description}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            updateUI();
+        }
+
+        // Initialize UI
+        updateUI();
+    </script>
+</body>
+</html>
