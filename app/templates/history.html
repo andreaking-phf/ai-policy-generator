@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}History{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1>History</h1>
+    <p class="subtitle">View and manage your saved prioritizations and policies</p>
+</header>
+
+<div class="tabs">
+    <button class="tab-btn active" data-tab="prioritizations">Prioritization Sessions ({{ prioritizations|length }})</button>
+    <button class="tab-btn" data-tab="policies">Generated Policies ({{ policies|length }})</button>
+</div>
+
+<!-- Prioritizations Tab -->
+<div class="tab-content active" id="prioritizations-tab">
+    {% if prioritizations %}
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Method</th>
+                    <th>Date Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in prioritizations %}
+                <tr data-id="{{ session.id }}">
+                    <td><strong>{{ session.name }}</strong></td>
+                    <td><span class="method-badge">{{ session.method | title }}</span></td>
+                    <td>{{ session.created_at.strftime('%B %d, %Y at %I:%M %p') }}</td>
+                    <td class="actions-cell">
+                        <a href="{{ url_for('generate') }}?prioritization={{ session.id }}" class="btn btn-small btn-primary">Use for Policy</a>
+                        <button class="btn btn-small btn-secondary" onclick="downloadPrioritization({{ session.id }})">Download</button>
+                        <button class="btn btn-small btn-danger" onclick="deletePrioritization({{ session.id }})">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state-large">
+        <h3>No Prioritization Sessions Yet</h3>
+        <p>Start by creating a new prioritization to rank policy elements for your organization.</p>
+        <a href="{{ url_for('prioritize') }}" class="btn btn-primary">Create Prioritization</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Policies Tab -->
+<div class="tab-content" id="policies-tab">
+    {% if policies %}
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Organization</th>
+                    <th>Intensity</th>
+                    <th>Date Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for policy in policies %}
+                <tr data-id="{{ policy.id }}">
+                    <td><strong>{{ policy.name }}</strong></td>
+                    <td>{{ policy.org_name }}</td>
+                    <td><span class="intensity-badge intensity-{{ policy.intensity }}">{{ policy.intensity | title }}</span></td>
+                    <td>{{ policy.created_at.strftime('%B %d, %Y at %I:%M %p') }}</td>
+                    <td class="actions-cell">
+                        <a href="{{ url_for('view_policy', policy_id=policy.id) }}" class="btn btn-small btn-primary">View</a>
+                        <button class="btn btn-small btn-secondary" onclick="downloadPolicy({{ policy.id }})">Download</button>
+                        <button class="btn btn-small btn-danger" onclick="deletePolicy({{ policy.id }})">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state-large">
+        <h3>No Policies Generated Yet</h3>
+        <p>Generate a policy document based on your prioritized rankings.</p>
+        <a href="{{ url_for('generate') }}" class="btn btn-primary">Generate Policy</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        this.classList.add('active');
+        document.getElementById(`${this.dataset.tab}-tab`).classList.add('active');
+    });
+});
+
+async function downloadPrioritization(id) {
+    try {
+        const response = await fetch(`/api/prioritizations/${id}`);
+        if (response.ok) {
+            const data = await response.json();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `prioritization-${id}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    } catch (error) {
+        alert('Error downloading: ' + error.message);
+    }
+}
+
+async function deletePrioritization(id) {
+    if (!confirm('Are you sure you want to delete this prioritization session?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/prioritizations/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            document.querySelector(`#prioritizations-tab tr[data-id="${id}"]`).remove();
+        } else {
+            alert('Error deleting prioritization');
+        }
+    } catch (error) {
+        alert('Error deleting: ' + error.message);
+    }
+}
+
+async function downloadPolicy(id) {
+    try {
+        const response = await fetch(`/api/policies/${id}`);
+        if (response.ok) {
+            const data = await response.json();
+            const blob = new Blob([data.policy_markdown || data.policy_html], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `policy-${id}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    } catch (error) {
+        alert('Error downloading: ' + error.message);
+    }
+}
+
+async function deletePolicy(id) {
+    if (!confirm('Are you sure you want to delete this policy?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/policies/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            document.querySelector(`#policies-tab tr[data-id="${id}"]`).remove();
+        } else {
+            alert('Error deleting policy');
+        }
+    } catch (error) {
+        alert('Error deleting: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

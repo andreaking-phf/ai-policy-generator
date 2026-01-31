@@ -1,7 +1,7 @@
 # AI Policy Decision Tree System for Health Departments
 ## Complete Implementation Guide
 
-**Version 1.0** | **Last Updated: January 2026**
+**Version 2.0** | **Last Updated: January 2026**
 
 ---
 
@@ -9,15 +9,17 @@
 
 This system provides state and local health departments with evidence-based tools to develop customized AI use policies. The system consists of:
 
-1. **Interactive Prioritization Tool** - Helps users rank 12 policy elements
-2. **Policy Document Generator** - Creates customized policy documents based on priorities
-3. **Evidence Base** - Built on research from 50+ state/federal/municipal policies
+1. **Flask Web Application** (NEW) - Full-featured app with database storage for persistent data
+2. **Interactive Prioritization Tool** - Helps users rank 12 policy elements
+3. **Policy Document Generator** - Creates customized policy documents based on priorities
+4. **Evidence Base** - Built on research from 50+ state/federal/municipal policies
 
 ---
 
 ## Table of Contents
 
 - [Quick Start](#quick-start)
+- [Flask Web Application (NEW)](#flask-web-application-new)
 - [System Components](#system-components)
 - [Research Foundation](#research-foundation)
 - [Usage Guide](#usage-guide)
@@ -30,7 +32,31 @@ This system provides state and local health departments with evidence-based tool
 
 ## Quick Start
 
-### For Users (No Technical Skills Required)
+### Option 1: Flask Web Application (Recommended)
+
+The Flask application provides a full-featured experience with persistent data storage.
+
+```bash
+# Navigate to the app directory
+cd app
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python run.py
+```
+
+Then open your browser to: **http://localhost:5000**
+
+**Features:**
+- Dashboard with overview and recent activity
+- Save prioritization sessions to database
+- Generate and store policy documents
+- View history of all sessions and policies
+- Export in multiple formats (JSON, Markdown, PDF)
+
+### Option 2: Standalone HTML Files (No Installation)
 
 1. **Open `ai-policy-prioritization.html` in your web browser**
    - Works on Chrome, Firefox, Safari, Edge
@@ -53,17 +79,82 @@ This system provides state and local health departments with evidence-based tool
    - Generate your customized policy document
    - Download in multiple formats
 
-### For Advanced Users
+### Option 3: Python Script (Advanced)
 
 Use the Python script for programmatic DOCX generation:
 
 ```bash
 # Install dependencies
-pip install python-docx --break-system-packages
+pip install python-docx
 
 # Generate policy document
 python generate_docx.py config.json output.docx
 ```
+
+---
+
+## Flask Web Application (NEW)
+
+### Application Structure
+
+```
+app/
+├── app.py              # Main Flask application
+├── models.py           # SQLAlchemy database models
+├── policy_templates.py # Policy content templates
+├── run.py              # Application runner
+├── requirements.txt    # Python dependencies
+├── static/
+│   ├── css/styles.css  # Application styles
+│   └── js/app.js       # Frontend JavaScript
+└── templates/
+    ├── base.html       # Base template
+    ├── dashboard.html  # Main dashboard
+    ├── prioritize.html # Prioritization tool
+    ├── generate.html   # Policy generator
+    ├── history.html    # Session history
+    └── view_policy.html # Policy viewer
+```
+
+### Pages
+
+| Page | URL | Description |
+|------|-----|-------------|
+| Dashboard | `/` | Overview, recent activity, quick actions |
+| Prioritize | `/prioritize` | Interactive prioritization tool with 4 methods |
+| Generate | `/generate` | Policy document generator with configuration |
+| History | `/history` | View and manage saved sessions and policies |
+| View Policy | `/policy/<id>` | View a specific generated policy |
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/elements` | Get all 12 policy elements |
+| GET | `/api/prioritizations` | List all saved prioritization sessions |
+| POST | `/api/prioritizations` | Save a new prioritization session |
+| GET | `/api/prioritizations/<id>` | Get specific prioritization |
+| DELETE | `/api/prioritizations/<id>` | Delete a prioritization |
+| GET | `/api/policies` | List all generated policies |
+| POST | `/api/policies` | Save a new generated policy |
+| GET | `/api/policies/<id>` | Get specific policy |
+| DELETE | `/api/policies/<id>` | Delete a policy |
+| POST | `/api/generate-preview` | Generate policy preview without saving |
+
+### Data Storage
+
+The application uses SQLite for persistent storage:
+- **PrioritizationSession** - Stores prioritization sessions with method, rankings, and raw data
+- **GeneratedPolicy** - Stores generated policy documents with HTML and Markdown
+- **PolicyElement** - Reference table for the 12 policy elements
+
+### Features
+
+1. **Persistent Storage** - All sessions and policies saved to database
+2. **Session History** - View, load, and manage past work
+3. **Multiple Export Formats** - JSON, Markdown, PDF (via print)
+4. **Seamless Workflow** - Move from prioritization to generation smoothly
+5. **Sample Data** - Load sample rankings for demonstration
 
 ---
 

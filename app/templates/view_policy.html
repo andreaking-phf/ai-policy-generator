@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}{{ policy.name }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <div class="header-with-actions">
+        <div>
+            <h1>{{ policy.name }}</h1>
+            <p class="subtitle">{{ policy.org_name }} | Created {{ policy.created_at.strftime('%B %d, %Y') }}</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('history') }}" class="btn btn-secondary">Back to History</a>
+        </div>
+    </div>
+</header>
+
+<div class="card policy-meta">
+    <div class="meta-grid">
+        <div class="meta-item">
+            <span class="meta-label">Organization</span>
+            <span class="meta-value">{{ policy.org_name }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Jurisdiction</span>
+            <span class="meta-value">{{ policy.jurisdiction_type | title }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Size</span>
+            <span class="meta-value">{{ policy.org_size | title }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Intensity</span>
+            <span class="meta-value intensity-badge intensity-{{ policy.intensity }}">{{ policy.intensity | title }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="export-options">
+        <button class="btn btn-primary" id="downloadMdBtn">Download Markdown</button>
+        <button class="btn btn-secondary" id="copyBtn">Copy to Clipboard</button>
+        <button class="btn btn-secondary" id="printBtn">Print / Save PDF</button>
+    </div>
+
+    <div id="policyContent" class="policy-preview">
+        {{ policy.policy_html | safe }}
+    </div>
+</div>
+
+<script>
+const policyMarkdown = {{ policy.policy_markdown | tojson }};
+
+document.getElementById('downloadMdBtn').addEventListener('click', () => {
+    const blob = new Blob([policyMarkdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '{{ policy.name | replace(" ", "-") }}.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+});
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+    const content = document.getElementById('policyContent').innerText;
+    navigator.clipboard.writeText(content).then(() => {
+        alert('Policy copied to clipboard!');
+    });
+});
+
+document.getElementById('printBtn').addEventListener('click', () => {
+    window.print();
+});
+</script>
+{% endblock %}

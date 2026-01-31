@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1>AI Policy Generator</h1>
+    <p class="subtitle">Evidence-Based Decision Tool for State & Local Health Departments</p>
+</header>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.total_prioritizations }}</div>
+        <div class="stat-label">Prioritization Sessions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.total_policies }}</div>
+        <div class="stat-label">Generated Policies</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">12</div>
+        <div class="stat-label">Policy Elements</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">4</div>
+        <div class="stat-label">Prioritization Methods</div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card action-card">
+        <h2>Start New Prioritization</h2>
+        <p>Rank 12 policy elements using one of four methods to determine which areas are most important for your organization.</p>
+        <div class="method-preview">
+            <span class="method-tag">Weighted Scoring</span>
+            <span class="method-tag">Drag & Rank</span>
+            <span class="method-tag">Pairwise Comparison</span>
+            <span class="method-tag">Budget Allocation</span>
+        </div>
+        <a href="{{ url_for('prioritize') }}" class="btn btn-primary">Begin Prioritization</a>
+    </div>
+
+    <div class="card action-card">
+        <h2>Generate Policy Document</h2>
+        <p>Create a customized AI use policy based on your prioritized rankings. Choose from three intensity levels.</p>
+        <div class="method-preview">
+            <span class="method-tag intensity-basic">Basic</span>
+            <span class="method-tag intensity-standard">Standard</span>
+            <span class="method-tag intensity-comprehensive">Comprehensive</span>
+        </div>
+        <a href="{{ url_for('generate') }}" class="btn btn-primary">Generate Policy</a>
+    </div>
+</div>
+
+<div class="recent-activity">
+    <div class="card">
+        <h2>Recent Prioritizations</h2>
+        {% if recent_prioritizations %}
+        <ul class="activity-list">
+            {% for session in recent_prioritizations %}
+            <li class="activity-item">
+                <div class="activity-info">
+                    <strong>{{ session.name }}</strong>
+                    <span class="activity-meta">{{ session.method | title }} method</span>
+                </div>
+                <div class="activity-date">{{ session.created_at.strftime('%b %d, %Y') }}</div>
+                <div class="activity-actions">
+                    <a href="{{ url_for('generate') }}?prioritization={{ session.id }}" class="btn btn-small">Use</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-state">No prioritization sessions yet. <a href="{{ url_for('prioritize') }}">Create one now</a>.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Recent Policies</h2>
+        {% if recent_policies %}
+        <ul class="activity-list">
+            {% for policy in recent_policies %}
+            <li class="activity-item">
+                <div class="activity-info">
+                    <strong>{{ policy.name }}</strong>
+                    <span class="activity-meta">{{ policy.org_name }}</span>
+                </div>
+                <div class="activity-date">{{ policy.created_at.strftime('%b %d, %Y') }}</div>
+                <div class="activity-actions">
+                    <a href="{{ url_for('view_policy', policy_id=policy.id) }}" class="btn btn-small">View</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-state">No policies generated yet. <a href="{{ url_for('generate') }}">Create one now</a>.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card info-card">
+    <h2>How It Works</h2>
+    <div class="steps-grid">
+        <div class="step">
+            <div class="step-number">1</div>
+            <h3>Prioritize</h3>
+            <p>Rank 12 evidence-based policy elements using one of four methods designed to prevent the "everything is critical" problem.</p>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <h3>Configure</h3>
+            <p>Enter your organization details and choose the intensity level for your policy document.</p>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <h3>Generate</h3>
+            <p>Create a customized AI policy tailored to your priorities and organizational context.</p>
+        </div>
+        <div class="step">
+            <div class="step-number">4</div>
+            <h3>Export</h3>
+            <p>Download your policy in multiple formats (Markdown, DOCX, PDF) for review and implementation.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

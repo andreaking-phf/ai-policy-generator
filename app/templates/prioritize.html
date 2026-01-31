@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+
+{% block title %}Prioritize Policy Elements{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1>AI Policy Priority Builder</h1>
+    <p class="subtitle">Rank policy elements to determine what matters most for your organization</p>
+</header>
+
+<div class="progress-bar">
+    <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+    </div>
+    <div class="progress-text" id="progressText">Step 1 of 3: Choose Your Method</div>
+</div>
+
+<!-- Step 1: Method Selection -->
+<div id="step1" class="card">
+    <h2>Choose Your Prioritization Method</h2>
+    <div class="info-box">
+        <h3>Why Multiple Methods?</h3>
+        <p>Different methods suit different organizational cultures and decision-making styles. Each prevents the "everything is critical" problem through different mechanisms.</p>
+    </div>
+
+    <div class="method-selector">
+        <div class="method-card" data-method="weighted">
+            <div class="method-title">Weighted Scoring</div>
+            <div class="method-desc">Assign importance scores (1-10) to each element. Forces reflection on relative importance.</div>
+        </div>
+
+        <div class="method-card" data-method="ranking">
+            <div class="method-title">Drag & Rank</div>
+            <div class="method-desc">Physically order priorities from most to least important. Simple and intuitive.</div>
+        </div>
+
+        <div class="method-card" data-method="pairwise">
+            <div class="method-title">Pairwise Comparison</div>
+            <div class="method-desc">Compare two elements at a time. Most rigorous, prevents ties effectively.</div>
+        </div>
+
+        <div class="method-card" data-method="budget">
+            <div class="method-title">Budget Allocation</div>
+            <div class="method-desc">Distribute 100 points across priorities. Forces hard trade-offs.</div>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" id="startBtn" disabled>Begin Prioritization</button>
+</div>
+
+<!-- Step 2: Prioritization Interface -->
+<div id="step2" class="card hidden">
+    <h2 id="step2Title"></h2>
+    <div id="prioritizationInterface"></div>
+    <div class="action-buttons">
+        <button class="btn btn-primary" id="calculateBtn">Calculate Rankings</button>
+        <button class="btn btn-secondary" id="backBtn">Back</button>
+    </div>
+</div>
+
+<!-- Step 3: Results -->
+<div id="step3" class="card hidden">
+    <h2>Your Priority Rankings</h2>
+    <div class="info-box">
+        <h3>What's Next?</h3>
+        <p>These rankings will guide which policy elements to emphasize in your AI policy document. Higher-ranked items should receive more detailed treatment and stronger requirements.</p>
+    </div>
+
+    <div class="form-group">
+        <label for="sessionName">Save As (Name)</label>
+        <input type="text" id="sessionName" placeholder="e.g., Q1 2026 Policy Review" class="form-control">
+    </div>
+
+    <div id="resultsContainer"></div>
+
+    <div class="action-buttons">
+        <button class="btn btn-primary" id="saveBtn">Save to Database</button>
+        <button class="btn btn-primary" id="downloadBtn">Download JSON</button>
+        <button class="btn btn-primary" id="generatePolicyBtn">Generate Policy</button>
+        <button class="btn btn-secondary" id="startOverBtn">Start Over</button>
+    </div>
+</div>
+
+<!-- Hidden data store for elements -->
+<script id="policyElementsData" type="application/json">
+{{ elements | tojson }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Policy elements from server
+const policyElements = JSON.parse(document.getElementById('policyElementsData').textContent);
+
+// State management
+let currentMethod = null;
+let currentStep = 1;
+let priorityData = {};
+let rankings = [];
+
+// Initialize method selection
+document.querySelectorAll('.method-card').forEach(card => {
+    card.addEventListener('click', () => {
+        document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        currentMethod = card.dataset.method;
+        document.getElementById('startBtn').disabled = false;
+    });
+});
+
+document.getElementById('startBtn').addEventListener('click', () => {
+    currentStep = 2;
+    renderStep2();
+});
+
+document.getElementById('backBtn').addEventListener('click', () => {
+    currentStep = 1;
+    updateUI();
+});
+
+document.getElementById('calculateBtn').addEventListener('click', () => {
+    calculateRankings();
+    currentStep = 3;
+    renderResults();
+});
+
+document.getElementById('startOverBtn').addEventListener('click', () => {
+    currentStep = 1;
+    currentMethod = null;
+    priorityData = {};
+    rankings = [];
+    document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('startBtn').disabled = true;
+    updateUI();
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+    const data = {
+        method: currentMethod,
+        timestamp: new Date().toISOString(),
+        rankings: rankings,
+        rawData: priorityData
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-policy-priorities-${Date.now()}.json`;
+    a.click();
+});
+
+document.getElementById('saveBtn').addEventListener('click', async () => {
+    const name = document.getElementById('sessionName').value.trim() ||
+                 `Session ${new Date().toLocaleString()}`;
+
+    const data = {
+        name: name,
+        method: currentMethod,
+        rankings: rankings,
+        rawData: priorityData
+    };
+
+    try {
+        const response = await fetch('/api/prioritizations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            alert('Prioritization saved successfully!');
+            document.getElementById('saveBtn').textContent = 'Saved!';
+            document.getElementById('saveBtn').disabled = true;
+        } else {
+            alert('Error saving prioritization');
+        }
+    } catch (error) {
+        alert('Error saving prioritization: ' + error.message);
+    }
+});
+
+document.getElementById('generatePolicyBtn').addEventListener('click', () => {
+    // Store rankings in sessionStorage and redirect
+    sessionStorage.setItem('currentRankings', JSON.stringify(rankings));
+    window.location.href = '/generate';
+});
+
+function updateUI() {
+    document.getElementById('step1').classList.toggle('hidden', currentStep !== 1);
+    document.getElementById('step2').classList.toggle('hidden', currentStep !== 2);
+    document.getElementById('step3').classList.toggle('hidden', currentStep !== 3);
+
+    const progress = ((currentStep - 1) / 2) * 100;
+    document.getElementById('progressFill').style.width = `${progress}%`;
+
+    const stepTexts = [
+        'Step 1 of 3: Choose Your Method',
+        'Step 2 of 3: Prioritize Elements',
+        'Step 3 of 3: Review Results'
+    ];
+    document.getElementById('progressText').textContent = stepTexts[currentStep - 1];
+}
+
+function renderStep2() {
+    const interfaceEl = document.getElementById('prioritizationInterface');
+    const title = document.getElementById('step2Title');
+
+    switch(currentMethod) {
+        case 'weighted':
+            title.textContent = 'Rate Each Priority (1-10)';
+            interfaceEl.innerHTML = renderWeightedInterface();
+            break;
+        case 'ranking':
+            title.textContent = 'Drag to Rank (Top = Most Important)';
+            interfaceEl.innerHTML = renderRankingInterface();
+            initializeDragAndDrop();
+            break;
+        case 'pairwise':
+            title.textContent = 'Compare Pairs';
+            interfaceEl.innerHTML = renderPairwiseInterface();
+            break;
+        case 'budget':
+            title.textContent = 'Allocate 100 Points';
+            interfaceEl.innerHTML = renderBudgetInterface();
+            break;
+    }
+
+    updateUI();
+}
+
+function renderWeightedInterface() {
+    return policyElements.map(element => `
+        <div class="priority-item">
+            <div class="priority-header">
+                <div class="priority-name">${element.name}</div>
+                <div class="tier-badge tier-${element.tier}">Tier ${element.tier}</div>
+            </div>
+            <div class="priority-desc">${element.description}</div>
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Low (1)</span>
+                    <span class="slider-value" id="weight-${element.id}-value">5</span>
+                    <span>High (10)</span>
+                </div>
+                <input type="range" min="1" max="10" value="5"
+                       id="weight-${element.id}"
+                       oninput="document.getElementById('weight-${element.id}-value').textContent = this.value">
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderRankingInterface() {
+    const shuffled = [...policyElements].sort(() => Math.random() - 0.5);
+    return shuffled.map((element, index) => `
+        <div class="drag-item" draggable="true" data-id="${element.id}">
+            <span class="drag-handle">&#9776;</span>
+            <div class="drag-content">
+                <strong>${element.name}</strong>
+                <p>${element.description}</p>
+            </div>
+            <div class="tier-badge tier-${element.tier}">Tier ${element.tier}</div>
+        </div>
+    `).join('');
+}
+
+let pairwiseComparisons = [];
+let currentPairIndex = 0;
+
+function renderPairwiseInterface() {
+    pairwiseComparisons = [];
+    for (let i = 0; i < policyElements.length; i++) {
+        for (let j = i + 1; j < policyElements.length; j++) {
+            pairwiseComparisons.push([policyElements[i], policyElements[j]]);
+        }
+    }
+    currentPairIndex = 0;
+    priorityData.pairwiseScores = {};
+    policyElements.forEach(el => priorityData.pairwiseScores[el.id] = 0);
+
+    return renderCurrentPair();
+}
+
+function renderCurrentPair() {
+    if (currentPairIndex >= pairwiseComparisons.length) {
+        return '<p class="completion-message">All comparisons complete! Click "Calculate Rankings" to see results.</p>';
+    }
+
+    const [a, b] = pairwiseComparisons[currentPairIndex];
+    const progress = Math.round((currentPairIndex / pairwiseComparisons.length) * 100);
+
+    return `
+        <div class="pairwise-progress">
+            <p>Comparison ${currentPairIndex + 1} of ${pairwiseComparisons.length} (${progress}%)</p>
+            <div class="progress-track"><div class="progress-fill" style="width: ${progress}%"></div></div>
+        </div>
+        <p class="pairwise-question">Which is more important for your organization?</p>
+        <div class="comparison-container">
+            <div class="comparison-option" onclick="selectPairwise(${a.id})">
+                <h3>${a.name}</h3>
+                <p>${a.description}</p>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="comparison-option" onclick="selectPairwise(${b.id})">
+                <h3>${b.name}</h3>
+                <p>${b.description}</p>
+            </div>
+        </div>
+    `;
+}
+
+function selectPairwise(winnerId) {
+    priorityData.pairwiseScores[winnerId]++;
+    currentPairIndex++;
+    document.getElementById('prioritizationInterface').innerHTML = renderCurrentPair();
+}
+
+function renderBudgetInterface() {
+    priorityData.budget = {};
+    policyElements.forEach(el => priorityData.budget[el.id] = 0);
+
+    return `
+        <div class="budget-display">
+            <div class="budget-amount" id="remainingBudget">100</div>
+            <div class="budget-label">Points Remaining</div>
+        </div>
+        ${policyElements.map(element => `
+            <div class="priority-item">
+                <div class="priority-header">
+                    <div class="priority-name">${element.name}</div>
+                    <div class="budget-value" id="budget-${element.id}-display">0</div>
+                </div>
+                <div class="priority-desc">${element.description}</div>
+                <div class="slider-container">
+                    <input type="range" min="0" max="100" value="0"
+                           id="budget-${element.id}"
+                           oninput="updateBudget(${element.id}, this.value)">
+                </div>
+            </div>
+        `).join('')}
+    `;
+}
+
+function updateBudget(id, value) {
+    value = parseInt(value);
+    const oldValue = priorityData.budget[id] || 0;
+    const diff = value - oldValue;
+
+    const totalAllocated = Object.values(priorityData.budget).reduce((sum, val) => sum + val, 0);
+    const newTotal = totalAllocated + diff;
+
+    if (newTotal <= 100) {
+        priorityData.budget[id] = value;
+        document.getElementById(`budget-${id}-display`).textContent = value;
+        document.getElementById('remainingBudget').textContent = 100 - newTotal;
+
+        // Update color based on remaining
+        const remaining = 100 - newTotal;
+        const budgetEl = document.getElementById('remainingBudget');
+        if (remaining === 0) {
+            budgetEl.style.color = 'var(--forest)';
+        } else if (remaining < 20) {
+            budgetEl.style.color = 'var(--gold)';
+        } else {
+            budgetEl.style.color = 'var(--terracotta)';
+        }
+    } else {
+        document.getElementById(`budget-${id}`).value = oldValue;
+    }
+}
+
+let draggedElement = null;
+
+function initializeDragAndDrop() {
+    const items = document.querySelectorAll('.drag-item');
+
+    items.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+    });
+}
+
+function handleDragStart(e) {
+    draggedElement = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    document.querySelectorAll('.drag-item').forEach(item => {
+        item.classList.remove('drag-over');
+    });
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDragEnter(e) {
+    this.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (draggedElement !== this) {
+        const container = this.parentNode;
+        const allItems = [...container.querySelectorAll('.drag-item')];
+        const draggedIndex = allItems.indexOf(draggedElement);
+        const targetIndex = allItems.indexOf(this);
+
+        if (draggedIndex < targetIndex) {
+            container.insertBefore(draggedElement, this.nextSibling);
+        } else {
+            container.insertBefore(draggedElement, this);
+        }
+    }
+}
+
+function calculateRankings() {
+    rankings = [];
+
+    switch(currentMethod) {
+        case 'weighted':
+            policyElements.forEach(element => {
+                const score = parseInt(document.getElementById(`weight-${element.id}`).value);
+                rankings.push({
+                    ...element,
+                    score: score,
+                    method: 'weighted'
+                });
+            });
+            rankings.sort((a, b) => b.score - a.score);
+            break;
+
+        case 'ranking':
+            const items = document.querySelectorAll('.drag-item');
+            items.forEach((item, index) => {
+                const id = parseInt(item.dataset.id);
+                const element = policyElements.find(e => e.id === id);
+                rankings.push({
+                    ...element,
+                    score: policyElements.length - index,
+                    method: 'ranking'
+                });
+            });
+            break;
+
+        case 'pairwise':
+            policyElements.forEach(element => {
+                rankings.push({
+                    ...element,
+                    score: priorityData.pairwiseScores[element.id],
+                    method: 'pairwise'
+                });
+            });
+            rankings.sort((a, b) => b.score - a.score);
+            break;
+
+        case 'budget':
+            policyElements.forEach(element => {
+                rankings.push({
+                    ...element,
+                    score: priorityData.budget[element.id],
+                    method: 'budget'
+                });
+            });
+            rankings.sort((a, b) => b.score - a.score);
+            break;
+    }
+}
+
+function renderResults() {
+    const container = document.getElementById('resultsContainer');
+
+    container.innerHTML = rankings.map((item, index) => {
+        let priorityClass = '';
+        if (index < 4) priorityClass = 'priority-high';
+        else if (index < 8) priorityClass = 'priority-medium';
+        else priorityClass = 'priority-low';
+
+        let scoreDisplay = '';
+        switch(currentMethod) {
+            case 'weighted':
+                scoreDisplay = `Score: ${item.score}/10`;
+                break;
+            case 'ranking':
+                scoreDisplay = `Position: ${index + 1}`;
+                break;
+            case 'pairwise':
+                scoreDisplay = `Wins: ${item.score}`;
+                break;
+            case 'budget':
+                scoreDisplay = `Points: ${item.score}`;
+                break;
+        }
+
+        return `
+            <div class="rank-item ${priorityClass}">
+                <div class="rank-number">#${index + 1}</div>
+                <div class="rank-content">
+                    <div class="rank-title">${item.name}</div>
+                    <div class="rank-score">${scoreDisplay} | ${item.description}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    updateUI();
+}
+
+// Initialize
+updateUI();
+</script>
+{% endblock %}

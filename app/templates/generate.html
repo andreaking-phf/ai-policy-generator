@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}Generate Policy{% endblock %}
+
+{% block content %}
+<header class="page-header">
+    <h1>AI Policy Document Generator</h1>
+    <p class="subtitle">Create a customized AI use policy based on your priorities</p>
+</header>
+
+<!-- Configuration Card -->
+<div class="card">
+    <h2>Policy Configuration</h2>
+
+    <div class="info-box">
+        <h3>How This Works</h3>
+        <p>This tool generates a customized AI policy based on your priorities. Higher-ranked elements receive more detailed requirements and stronger language. Load a saved prioritization or enter rankings manually.</p>
+    </div>
+
+    <div class="form-group">
+        <label for="prioritizationSelect">1. Select Saved Prioritization</label>
+        <select id="prioritizationSelect" class="form-control">
+            <option value="">-- Select a saved prioritization --</option>
+            {% for p in prioritizations %}
+            <option value="{{ p.id }}">{{ p.name }} ({{ p.method }}) - {{ p.created_at.strftime('%b %d, %Y') }}</option>
+            {% endfor %}
+        </select>
+        <p class="form-hint">Or <button type="button" class="link-btn" id="loadSampleBtn">load sample rankings</button> for demonstration</p>
+    </div>
+
+    <div class="settings-grid">
+        <div class="form-group">
+            <label for="orgName">2. Organization Name *</label>
+            <input type="text" id="orgName" class="form-control" placeholder="e.g., Seattle-King County Public Health" required>
+        </div>
+
+        <div class="form-group">
+            <label for="jurisdictionType">3. Jurisdiction Type</label>
+            <select id="jurisdictionType" class="form-control">
+                <option value="state">State Health Department</option>
+                <option value="local" selected>Local Health Department</option>
+                <option value="county">County Health Department</option>
+                <option value="city">City Health Department</option>
+                <option value="tribal">Tribal Health Department</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="orgSize">4. Organization Size</label>
+            <select id="orgSize" class="form-control">
+                <option value="small">Small (< 50 staff)</option>
+                <option value="medium" selected>Medium (50-200 staff)</option>
+                <option value="large">Large (200+ staff)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>5. Policy Intensity Level</label>
+        <div class="intensity-selector">
+            <div class="intensity-option" data-intensity="basic">
+                <strong>Basic</strong>
+                <p>Essential requirements only. Best for getting started quickly.</p>
+            </div>
+            <div class="intensity-option selected" data-intensity="standard">
+                <strong>Standard</strong>
+                <p>Balanced approach with detailed requirements for top priorities.</p>
+            </div>
+            <div class="intensity-option" data-intensity="comprehensive">
+                <strong>Comprehensive</strong>
+                <p>Full detailed requirements across all policy elements.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="additionalContext">6. Additional Context (Optional)</label>
+        <textarea id="additionalContext" class="form-control" rows="3" placeholder="Any specific concerns, existing policies to align with, or special considerations..."></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="policyName">7. Policy Name (for saving)</label>
+        <input type="text" id="policyName" class="form-control" placeholder="e.g., 2026 AI Use Policy Draft">
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-primary" id="generateBtn">Generate Policy Preview</button>
+    </div>
+</div>
+
+<!-- Priority Summary Card -->
+<div class="card" id="priorityCard" style="display: none;">
+    <h2>Your Priority Rankings</h2>
+    <div class="priority-summary">
+        <ul class="priority-list" id="priorityList"></ul>
+    </div>
+</div>
+
+<!-- Policy Preview Card -->
+<div class="card" id="previewCard" style="display: none;">
+    <h2>Generated Policy Document</h2>
+
+    <div class="export-options">
+        <button class="btn btn-primary" id="saveDbBtn">Save to Database</button>
+        <button class="btn btn-primary" id="downloadMdBtn">Download Markdown</button>
+        <button class="btn btn-secondary" id="copyBtn">Copy to Clipboard</button>
+        <button class="btn btn-secondary" id="printBtn">Print / Save PDF</button>
+    </div>
+
+    <div id="policyPreview" class="policy-preview"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentRankings = [];
+let currentIntensity = 'standard';
+let currentPrioritizationId = null;
+let generatedPolicy = null;
+
+// Check for rankings from prioritization page
+const storedRankings = sessionStorage.getItem('currentRankings');
+if (storedRankings) {
+    currentRankings = JSON.parse(storedRankings);
+    displayPriorities();
+    sessionStorage.removeItem('currentRankings');
+}
+
+// Check URL params for prioritization ID
+const urlParams = new URLSearchParams(window.location.search);
+const prioritizationId = urlParams.get('prioritization');
+if (prioritizationId) {
+    document.getElementById('prioritizationSelect').value = prioritizationId;
+    loadPrioritization(prioritizationId);
+}
+
+// Event listeners
+document.querySelectorAll('.intensity-option').forEach(option => {
+    option.addEventListener('click', function() {
+        document.querySelectorAll('.intensity-option').forEach(o => o.classList.remove('selected'));
+        this.classList.add('selected');
+        currentIntensity = this.dataset.intensity;
+    });
+});
+
+document.getElementById('prioritizationSelect').addEventListener('change', function() {
+    if (this.value) {
+        loadPrioritization(this.value);
+    }
+});
+
+document.getElementById('loadSampleBtn').addEventListener('click', loadSampleRankings);
+document.getElementById('generateBtn').addEventListener('click', generatePolicy);
+document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
+document.getElementById('printBtn').addEventListener('click', () => window.print());
+document.getElementById('downloadMdBtn').addEventListener('click', downloadMarkdown);
+document.getElementById('saveDbBtn').addEventListener('click', saveToDatabase);
+
+async function loadPrioritization(id) {
+    try {
+        const response = await fetch(`/api/prioritizations/${id}`);
+        if (response.ok) {
+            const data = await response.json();
+            currentRankings = data.rankings;
+            currentPrioritizationId = id;
+            displayPriorities();
+        }
+    } catch (error) {
+        console.error('Error loading prioritization:', error);
+    }
+}
+
+function loadSampleRankings() {
+    currentRankings = [
+        { id: 1, name: "Data Privacy & Security", score: 10, tier: 1 },
+        { id: 2, name: "Bias, Equity & Discrimination", score: 9, tier: 1 },
+        { id: 3, name: "Transparency & Explainability", score: 8, tier: 1 },
+        { id: 4, name: "Human Oversight & Accountability", score: 8, tier: 1 },
+        { id: 5, name: "Accuracy & Validation", score: 7, tier: 2 },
+        { id: 6, name: "Governance & Risk Management", score: 6, tier: 2 },
+        { id: 7, name: "Training & Capacity Building", score: 6, tier: 2 },
+        { id: 8, name: "Use Case Appropriateness", score: 5, tier: 3 },
+        { id: 9, name: "Procurement & Vendor Management", score: 4, tier: 3 },
+        { id: 10, name: "Legal & Regulatory Compliance", score: 4, tier: 3 },
+        { id: 11, name: "Community Engagement", score: 3, tier: 4 },
+        { id: 12, name: "Sustainability & Evaluation", score: 2, tier: 4 }
+    ];
+    currentPrioritizationId = null;
+    displayPriorities();
+    alert('Sample rankings loaded! Configure your organization details and generate the policy.');
+}
+
+function displayPriorities() {
+    const list = document.getElementById('priorityList');
+    const card = document.getElementById('priorityCard');
+
+    list.innerHTML = currentRankings.map((item, index) => {
+        let tierClass = '';
+        if (index < 4) tierClass = 'tier-high';
+        else if (index < 8) tierClass = 'tier-medium';
+        else tierClass = 'tier-low';
+
+        return `
+            <li>
+                <span>${item.name}</span>
+                <span class="rank-badge ${tierClass}">#${index + 1}</span>
+            </li>
+        `;
+    }).join('');
+
+    card.style.display = 'block';
+}
+
+async function generatePolicy() {
+    const orgName = document.getElementById('orgName').value.trim();
+    if (!orgName) {
+        alert('Please enter your organization name.');
+        return;
+    }
+
+    if (currentRankings.length === 0) {
+        alert('Please select a prioritization or load sample rankings first.');
+        return;
+    }
+
+    const config = {
+        orgName: orgName,
+        jurisdictionType: document.getElementById('jurisdictionType').value,
+        orgSize: document.getElementById('orgSize').value,
+        intensity: currentIntensity,
+        additionalContext: document.getElementById('additionalContext').value,
+        rankings: currentRankings,
+        prioritizationId: currentPrioritizationId
+    };
+
+    try {
+        const response = await fetch('/api/generate-preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+
+        if (response.ok) {
+            generatedPolicy = await response.json();
+            generatedPolicy.config = config;
+            document.getElementById('policyPreview').innerHTML = generatedPolicy.html;
+            document.getElementById('previewCard').style.display = 'block';
+            document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert('Error generating policy');
+        }
+    } catch (error) {
+        alert('Error generating policy: ' + error.message);
+    }
+}
+
+async function saveToDatabase() {
+    if (!generatedPolicy) {
+        alert('Please generate a policy first.');
+        return;
+    }
+
+    const name = document.getElementById('policyName').value.trim() ||
+                 `Policy for ${generatedPolicy.config.orgName}`;
+
+    const data = {
+        ...generatedPolicy.config,
+        name: name
+    };
+
+    try {
+        const response = await fetch('/api/policies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            alert('Policy saved successfully!');
+            document.getElementById('saveDbBtn').textContent = 'Saved!';
+            document.getElementById('saveDbBtn').disabled = true;
+        } else {
+            alert('Error saving policy');
+        }
+    } catch (error) {
+        alert('Error saving policy: ' + error.message);
+    }
+}
+
+function copyToClipboard() {
+    const preview = document.getElementById('policyPreview');
+    const text = preview.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Policy text copied to clipboard!');
+    });
+}
+
+function downloadMarkdown() {
+    if (!generatedPolicy || !generatedPolicy.markdown) {
+        alert('Please generate a policy first.');
+        return;
+    }
+
+    const blob = new Blob([generatedPolicy.markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-policy-${Date.now()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}
