@@ -52,7 +52,8 @@ def dashboard():
 def prioritize():
     """Prioritization tool page"""
     elements = PolicyElement.query.order_by(PolicyElement.id).all()
-    return render_template('prioritize.html', elements=elements)
+    elements_list = [e.to_dict() for e in elements]
+    return render_template('prioritize.html', elements=elements_list)
 
 
 @app.route('/generate')
