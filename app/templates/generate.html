@@ -2,6 +2,289 @@
 
 {% block title %}Generate Policy{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Formal document styling for policy preview */
+    .policy-document {
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 12pt;
+        line-height: 1.6;
+        color: #000;
+        background: #fff;
+        padding: 2rem;
+        max-width: 8.5in;
+        margin: 0 auto;
+    }
+
+    .policy-document h1 {
+        font-size: 16pt;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+    }
+
+    .policy-document h2 {
+        font-size: 14pt;
+        font-weight: bold;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        border-bottom: 1px solid #000;
+        padding-bottom: 0.25rem;
+    }
+
+    .policy-document h3 {
+        font-size: 12pt;
+        font-weight: bold;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .policy-document h4 {
+        font-size: 12pt;
+        font-weight: normal;
+        font-style: italic;
+        margin-top: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .policy-document p {
+        font-weight: normal;
+        margin-bottom: 0.75rem;
+        text-align: justify;
+    }
+
+    .policy-document ul, .policy-document ol {
+        margin-left: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .policy-document li {
+        font-weight: normal;
+        margin-bottom: 0.25rem;
+    }
+
+    .policy-document strong {
+        font-weight: bold;
+    }
+
+    .policy-document em {
+        font-style: italic;
+        font-weight: normal;
+    }
+
+    .policy-document .doc-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .policy-document .doc-header p {
+        text-align: center;
+        margin-bottom: 0.25rem;
+    }
+
+    .policy-document hr {
+        border: none;
+        border-top: 1px solid #000;
+        margin: 1.5rem 0;
+    }
+
+    .policy-document .references-section {
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid #000;
+    }
+
+    .policy-document .references-section ul {
+        list-style-type: none;
+        margin-left: 0;
+    }
+
+    .policy-document .references-section li {
+        margin-bottom: 0.5rem;
+    }
+
+    .policy-document .references-section a {
+        color: #000;
+        text-decoration: underline;
+    }
+
+    /* Element selection checkboxes */
+    .element-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .element-checkbox {
+        display: flex;
+        align-items: flex-start;
+        padding: 0.75rem;
+        background: var(--bg-secondary);
+        border-radius: var(--radius);
+        border: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .element-checkbox:hover {
+        border-color: var(--primary-color);
+    }
+
+    .element-checkbox.selected {
+        background: var(--primary-light);
+        border-color: var(--primary-color);
+    }
+
+    .element-checkbox input[type="checkbox"] {
+        margin-right: 0.75rem;
+        margin-top: 0.25rem;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .element-checkbox-content {
+        flex: 1;
+    }
+
+    .element-checkbox-content strong {
+        display: block;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .element-checkbox-content small {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    .selection-controls {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .selection-controls button {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    /* References input section */
+    .references-input {
+        margin-top: 1rem;
+    }
+
+    .reference-item {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .reference-item input {
+        flex: 1;
+    }
+
+    .reference-item .btn-remove {
+        background: var(--danger-color);
+        color: white;
+        border: none;
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--radius);
+        cursor: pointer;
+    }
+
+    #referencesList {
+        margin-bottom: 0.75rem;
+    }
+
+    /* Chat interface */
+    .chat-container {
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin-top: 1rem;
+    }
+
+    .chat-header {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+    }
+
+    .chat-messages {
+        height: 300px;
+        overflow-y: auto;
+        padding: 1rem;
+        background: var(--bg-secondary);
+    }
+
+    .chat-message {
+        margin-bottom: 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius);
+        max-width: 85%;
+    }
+
+    .chat-message.user {
+        background: var(--primary-light);
+        margin-left: auto;
+    }
+
+    .chat-message.assistant {
+        background: white;
+        border: 1px solid var(--border-color);
+    }
+
+    .chat-message .sender {
+        font-weight: 600;
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+        color: var(--text-muted);
+    }
+
+    .chat-input-area {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        border-top: 1px solid var(--border-color);
+        background: white;
+    }
+
+    .chat-input-area input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+    }
+
+    .chat-input-area button {
+        padding: 0.75rem 1.5rem;
+    }
+
+    /* Print styles for formal document */
+    @media print {
+        .card, .page-header, .export-options, .chat-container {
+            display: none !important;
+        }
+
+        #previewCard {
+            display: block !important;
+            box-shadow: none;
+            border: none;
+        }
+
+        .policy-document {
+            padding: 0;
+            max-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <header class="page-header">
     <h1>AI Policy Document Generator</h1>
@@ -14,11 +297,11 @@
 
     <div class="info-box">
         <h3>How This Works</h3>
-        <p>This tool generates a customized AI policy based on your priorities. Higher-ranked elements receive more detailed requirements and stronger language. Load a saved prioritization or enter rankings manually.</p>
+        <p>This tool generates a customized AI policy based on your priorities. Select which policy elements to include, configure your organization details, and generate a formal policy document ready for review.</p>
     </div>
 
     <div class="form-group">
-        <label for="prioritizationSelect">1. Select Saved Prioritization</label>
+        <label for="prioritizationSelect">1. Select Saved Prioritization (Optional)</label>
         <select id="prioritizationSelect" class="form-control">
             <option value="">-- Select a saved prioritization --</option>
             {% for p in prioritizations %}
@@ -28,14 +311,27 @@
         <p class="form-hint">Or <button type="button" class="link-btn" id="loadSampleBtn">load sample rankings</button> for demonstration</p>
     </div>
 
+    <div class="form-group">
+        <label>2. Select Policy Elements to Include</label>
+        <div class="selection-controls">
+            <button type="button" class="btn btn-secondary" id="selectAllBtn">Select All</button>
+            <button type="button" class="btn btn-secondary" id="selectNoneBtn">Select None</button>
+            <button type="button" class="btn btn-secondary" id="selectTop6Btn">Select Top 6</button>
+        </div>
+        <div class="element-selector" id="elementSelector">
+            <!-- Populated by JavaScript -->
+        </div>
+        <p class="form-hint"><span id="selectedCount">0</span> elements selected</p>
+    </div>
+
     <div class="settings-grid">
         <div class="form-group">
-            <label for="orgName">2. Organization Name *</label>
+            <label for="orgName">3. Organization Name *</label>
             <input type="text" id="orgName" class="form-control" placeholder="e.g., Seattle-King County Public Health" required>
         </div>
 
         <div class="form-group">
-            <label for="jurisdictionType">3. Jurisdiction Type</label>
+            <label for="jurisdictionType">4. Jurisdiction Type</label>
             <select id="jurisdictionType" class="form-control">
                 <option value="state">State Health Department</option>
                 <option value="local" selected>Local Health Department</option>
@@ -46,7 +342,7 @@
         </div>
 
         <div class="form-group">
-            <label for="orgSize">4. Organization Size</label>
+            <label for="orgSize">5. Organization Size</label>
             <select id="orgSize" class="form-control">
                 <option value="small">Small (< 50 staff)</option>
                 <option value="medium" selected>Medium (50-200 staff)</option>
@@ -56,7 +352,7 @@
     </div>
 
     <div class="form-group">
-        <label>5. Policy Intensity Level</label>
+        <label>6. Policy Intensity Level</label>
         <div class="intensity-selector">
             <div class="intensity-option" data-intensity="basic">
                 <strong>Basic</strong>
@@ -74,25 +370,26 @@
     </div>
 
     <div class="form-group">
-        <label for="additionalContext">6. Additional Context (Optional)</label>
+        <label for="additionalContext">7. Additional Context (Optional)</label>
         <textarea id="additionalContext" class="form-control" rows="3" placeholder="Any specific concerns, existing policies to align with, or special considerations..."></textarea>
     </div>
 
     <div class="form-group">
-        <label for="policyName">7. Policy Name (for saving)</label>
+        <label>8. References and Related Policies (Optional)</label>
+        <p class="form-hint">Add links to relevant policies for your jurisdiction that should be referenced in the document.</p>
+        <div id="referencesList" class="references-input">
+            <!-- Reference items added dynamically -->
+        </div>
+        <button type="button" class="btn btn-secondary" id="addReferenceBtn">+ Add Reference</button>
+    </div>
+
+    <div class="form-group">
+        <label for="policyName">9. Policy Name (for saving)</label>
         <input type="text" id="policyName" class="form-control" placeholder="e.g., 2026 AI Use Policy Draft">
     </div>
 
     <div class="action-buttons">
-        <button class="btn btn-primary" id="generateBtn">Generate Policy Preview</button>
-    </div>
-</div>
-
-<!-- Priority Summary Card -->
-<div class="card" id="priorityCard" style="display: none;">
-    <h2>Your Priority Rankings</h2>
-    <div class="priority-summary">
-        <ul class="priority-list" id="priorityList"></ul>
+        <button class="btn btn-primary" id="generateBtn">Generate Policy Document</button>
     </div>
 </div>
 
@@ -102,27 +399,179 @@
 
     <div class="export-options">
         <button class="btn btn-primary" id="saveDbBtn">Save to Database</button>
+        <button class="btn btn-primary" id="downloadDocxBtn">Download Word (.docx)</button>
         <button class="btn btn-primary" id="downloadMdBtn">Download Markdown</button>
         <button class="btn btn-secondary" id="copyBtn">Copy to Clipboard</button>
         <button class="btn btn-secondary" id="printBtn">Print / Save PDF</button>
     </div>
 
-    <div id="policyPreview" class="policy-preview"></div>
+    <div id="policyPreview" class="policy-document"></div>
+
+    <!-- Chat Interface for Refinement -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            Policy Refinement Assistant
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-message assistant">
+                <div class="sender">Assistant</div>
+                <div class="content">I can help you refine this policy. Ask me to simplify sections, add more detail, change the tone, or make other adjustments. What would you like to change?</div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Type your request... (e.g., 'Simplify section A' or 'Add more detail about training')">
+            <button class="btn btn-primary" id="chatSendBtn">Send</button>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// State
 let currentRankings = [];
+let selectedElements = new Set();
 let currentIntensity = 'standard';
 let currentPrioritizationId = null;
 let generatedPolicy = null;
+let references = [];
+
+// All available policy elements
+const allElements = [
+    { id: 1, name: "Data Privacy & Security", description: "Protection of sensitive health information", tier: 1 },
+    { id: 2, name: "Bias, Equity & Discrimination", description: "Ensuring fair and equitable AI outcomes", tier: 1 },
+    { id: 3, name: "Transparency & Explainability", description: "Making AI decisions understandable", tier: 1 },
+    { id: 4, name: "Human Oversight & Accountability", description: "Maintaining human control over AI", tier: 1 },
+    { id: 5, name: "Accuracy & Validation", description: "Ensuring AI outputs are reliable", tier: 2 },
+    { id: 6, name: "Governance & Risk Management", description: "Organizational AI oversight structures", tier: 2 },
+    { id: 7, name: "Training & Capacity Building", description: "Staff AI literacy and skills", tier: 2 },
+    { id: 8, name: "Use Case Appropriateness", description: "When to use or not use AI", tier: 3 },
+    { id: 9, name: "Procurement & Vendor Management", description: "AI purchasing and contracts", tier: 3 },
+    { id: 10, name: "Legal & Regulatory Compliance", description: "Meeting legal requirements", tier: 3 },
+    { id: 11, name: "Community Engagement", description: "Public input and transparency", tier: 4 },
+    { id: 12, name: "Sustainability & Evaluation", description: "Long-term AI program success", tier: 4 }
+];
+
+// Initialize element selector
+function initElementSelector() {
+    const container = document.getElementById('elementSelector');
+    container.innerHTML = allElements.map(el => `
+        <label class="element-checkbox" data-id="${el.id}">
+            <input type="checkbox" value="${el.id}">
+            <div class="element-checkbox-content">
+                <strong>${el.name}</strong>
+                <small>${el.description}</small>
+            </div>
+        </label>
+    `).join('');
+
+    // Add event listeners
+    container.querySelectorAll('.element-checkbox').forEach(cb => {
+        cb.addEventListener('click', function(e) {
+            if (e.target.type !== 'checkbox') {
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                checkbox.checked = !checkbox.checked;
+            }
+            const id = parseInt(this.dataset.id);
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            if (checkbox.checked) {
+                selectedElements.add(id);
+                this.classList.add('selected');
+            } else {
+                selectedElements.delete(id);
+                this.classList.remove('selected');
+            }
+            updateSelectedCount();
+        });
+    });
+}
+
+function updateSelectedCount() {
+    document.getElementById('selectedCount').textContent = selectedElements.size;
+}
+
+function selectAll() {
+    document.querySelectorAll('.element-checkbox').forEach(cb => {
+        cb.querySelector('input[type="checkbox"]').checked = true;
+        cb.classList.add('selected');
+        selectedElements.add(parseInt(cb.dataset.id));
+    });
+    updateSelectedCount();
+}
+
+function selectNone() {
+    document.querySelectorAll('.element-checkbox').forEach(cb => {
+        cb.querySelector('input[type="checkbox"]').checked = false;
+        cb.classList.remove('selected');
+    });
+    selectedElements.clear();
+    updateSelectedCount();
+}
+
+function selectTop6() {
+    selectNone();
+    const top6 = currentRankings.length > 0
+        ? currentRankings.slice(0, 6).map(r => r.id)
+        : [1, 2, 3, 4, 5, 6]; // Default top 6 by tier
+
+    document.querySelectorAll('.element-checkbox').forEach(cb => {
+        const id = parseInt(cb.dataset.id);
+        if (top6.includes(id)) {
+            cb.querySelector('input[type="checkbox"]').checked = true;
+            cb.classList.add('selected');
+            selectedElements.add(id);
+        }
+    });
+    updateSelectedCount();
+}
+
+// Reference management
+function addReference(title = '', url = '') {
+    const container = document.getElementById('referencesList');
+    const index = references.length;
+    references.push({ title, url });
+
+    const div = document.createElement('div');
+    div.className = 'reference-item';
+    div.innerHTML = `
+        <input type="text" class="form-control" placeholder="Reference title" value="${title}" data-index="${index}" data-field="title">
+        <input type="text" class="form-control" placeholder="URL (optional)" value="${url}" data-index="${index}" data-field="url">
+        <button type="button" class="btn-remove" data-index="${index}">&times;</button>
+    `;
+
+    div.querySelectorAll('input').forEach(input => {
+        input.addEventListener('change', function() {
+            const idx = parseInt(this.dataset.index);
+            const field = this.dataset.field;
+            references[idx][field] = this.value;
+        });
+    });
+
+    div.querySelector('.btn-remove').addEventListener('click', function() {
+        const idx = parseInt(this.dataset.index);
+        references.splice(idx, 1);
+        renderReferences();
+    });
+
+    container.appendChild(div);
+}
+
+function renderReferences() {
+    const container = document.getElementById('referencesList');
+    container.innerHTML = '';
+    const refsCopy = [...references];
+    references = [];
+    refsCopy.forEach(ref => addReference(ref.title, ref.url));
+}
+
+// Initialize on page load
+initElementSelector();
+selectAll(); // Default to all selected
 
 // Check for rankings from prioritization page
 const storedRankings = sessionStorage.getItem('currentRankings');
 if (storedRankings) {
     currentRankings = JSON.parse(storedRankings);
-    displayPriorities();
     sessionStorage.removeItem('currentRankings');
 }
 
@@ -150,11 +599,20 @@ document.getElementById('prioritizationSelect').addEventListener('change', funct
 });
 
 document.getElementById('loadSampleBtn').addEventListener('click', loadSampleRankings);
+document.getElementById('selectAllBtn').addEventListener('click', selectAll);
+document.getElementById('selectNoneBtn').addEventListener('click', selectNone);
+document.getElementById('selectTop6Btn').addEventListener('click', selectTop6);
+document.getElementById('addReferenceBtn').addEventListener('click', () => addReference());
 document.getElementById('generateBtn').addEventListener('click', generatePolicy);
 document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
 document.getElementById('printBtn').addEventListener('click', () => window.print());
 document.getElementById('downloadMdBtn').addEventListener('click', downloadMarkdown);
+document.getElementById('downloadDocxBtn').addEventListener('click', downloadDocx);
 document.getElementById('saveDbBtn').addEventListener('click', saveToDatabase);
+document.getElementById('chatSendBtn').addEventListener('click', sendChatMessage);
+document.getElementById('chatInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') sendChatMessage();
+});
 
 async function loadPrioritization(id) {
     try {
@@ -163,7 +621,18 @@ async function loadPrioritization(id) {
             const data = await response.json();
             currentRankings = data.rankings;
             currentPrioritizationId = id;
-            displayPriorities();
+
+            // Update element selection based on rankings
+            selectNone();
+            currentRankings.forEach(item => {
+                const cb = document.querySelector(`.element-checkbox[data-id="${item.id}"]`);
+                if (cb) {
+                    cb.querySelector('input[type="checkbox"]').checked = true;
+                    cb.classList.add('selected');
+                    selectedElements.add(item.id);
+                }
+            });
+            updateSelectedCount();
         }
     } catch (error) {
         console.error('Error loading prioritization:', error);
@@ -186,29 +655,8 @@ function loadSampleRankings() {
         { id: 12, name: "Sustainability & Evaluation", score: 2, tier: 4 }
     ];
     currentPrioritizationId = null;
-    displayPriorities();
-    alert('Sample rankings loaded! Configure your organization details and generate the policy.');
-}
-
-function displayPriorities() {
-    const list = document.getElementById('priorityList');
-    const card = document.getElementById('priorityCard');
-
-    list.innerHTML = currentRankings.map((item, index) => {
-        let tierClass = '';
-        if (index < 4) tierClass = 'tier-high';
-        else if (index < 8) tierClass = 'tier-medium';
-        else tierClass = 'tier-low';
-
-        return `
-            <li>
-                <span>${item.name}</span>
-                <span class="rank-badge ${tierClass}">#${index + 1}</span>
-            </li>
-        `;
-    }).join('');
-
-    card.style.display = 'block';
+    selectTop6();
+    alert('Sample rankings loaded! Top 6 elements selected. Adjust selection as needed.');
 }
 
 async function generatePolicy() {
@@ -218,10 +666,32 @@ async function generatePolicy() {
         return;
     }
 
-    if (currentRankings.length === 0) {
-        alert('Please select a prioritization or load sample rankings first.');
+    if (selectedElements.size === 0) {
+        alert('Please select at least one policy element to include.');
         return;
     }
+
+    // Build rankings from selected elements
+    let rankings;
+    if (currentRankings.length > 0) {
+        // Use prioritization order for selected elements
+        rankings = currentRankings.filter(r => selectedElements.has(r.id));
+        // Add any selected elements not in rankings
+        selectedElements.forEach(id => {
+            if (!rankings.find(r => r.id === id)) {
+                const el = allElements.find(e => e.id === id);
+                if (el) rankings.push({ id: el.id, name: el.name, tier: el.tier });
+            }
+        });
+    } else {
+        // Use default tier order
+        rankings = allElements
+            .filter(el => selectedElements.has(el.id))
+            .map(el => ({ id: el.id, name: el.name, tier: el.tier }));
+    }
+
+    // Filter out empty references
+    const validReferences = references.filter(r => r.title.trim());
 
     const config = {
         orgName: orgName,
@@ -229,11 +699,15 @@ async function generatePolicy() {
         orgSize: document.getElementById('orgSize').value,
         intensity: currentIntensity,
         additionalContext: document.getElementById('additionalContext').value,
-        rankings: currentRankings,
+        rankings: rankings,
+        references: validReferences,
         prioritizationId: currentPrioritizationId
     };
 
     try {
+        document.getElementById('generateBtn').textContent = 'Generating...';
+        document.getElementById('generateBtn').disabled = true;
+
         const response = await fetch('/api/generate-preview', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -251,6 +725,9 @@ async function generatePolicy() {
         }
     } catch (error) {
         alert('Error generating policy: ' + error.message);
+    } finally {
+        document.getElementById('generateBtn').textContent = 'Generate Policy Document';
+        document.getElementById('generateBtn').disabled = false;
     }
 }
 
@@ -311,6 +788,100 @@ function downloadMarkdown() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+async function downloadDocx() {
+    if (!generatedPolicy) {
+        alert('Please generate a policy first.');
+        return;
+    }
+
+    try {
+        document.getElementById('downloadDocxBtn').textContent = 'Generating...';
+        document.getElementById('downloadDocxBtn').disabled = true;
+
+        const response = await fetch('/api/generate-docx', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(generatedPolicy.config)
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ai-policy-${Date.now()}.docx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } else {
+            const error = await response.json();
+            alert('Error generating DOCX: ' + (error.error || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Error generating DOCX: ' + error.message);
+    } finally {
+        document.getElementById('downloadDocxBtn').textContent = 'Download Word (.docx)';
+        document.getElementById('downloadDocxBtn').disabled = false;
+    }
+}
+
+// Chat interface
+async function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (!message) return;
+
+    if (!generatedPolicy) {
+        alert('Please generate a policy first.');
+        return;
+    }
+
+    // Add user message to chat
+    addChatMessage('user', message);
+    input.value = '';
+
+    try {
+        const response = await fetch('/api/chat-refine', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: message,
+                currentPolicy: generatedPolicy.markdown,
+                config: generatedPolicy.config
+            })
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            addChatMessage('assistant', result.response);
+
+            // If policy was updated, refresh the preview
+            if (result.updatedPolicy) {
+                generatedPolicy.html = result.updatedHtml;
+                generatedPolicy.markdown = result.updatedPolicy;
+                document.getElementById('policyPreview').innerHTML = result.updatedHtml;
+            }
+        } else {
+            addChatMessage('assistant', 'Sorry, I encountered an error processing your request. Please try again.');
+        }
+    } catch (error) {
+        addChatMessage('assistant', 'Sorry, there was an error: ' + error.message);
+    }
+}
+
+function addChatMessage(role, content) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = `chat-message ${role}`;
+    div.innerHTML = `
+        <div class="sender">${role === 'user' ? 'You' : 'Assistant'}</div>
+        <div class="content">${content}</div>
+    `;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
 }
 </script>
 {% endblock %}
