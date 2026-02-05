@@ -308,24 +308,6 @@ def generate_docx():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/chat-refine', methods=['POST'])
-def chat_refine():
-    """Handle chat-based policy refinement requests"""
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'No data provided'}), 400
-
-    message = data.get('message', '')
-    current_policy = data.get('currentPolicy', '')
-    config = data.get('config', {})
-
-    # Simple rule-based responses for common refinement requests
-    # In a production system, this would integrate with an LLM API
-    response = process_refinement_request(message, current_policy, config)
-
-    return jsonify(response)
-
-
 # =============================================================================
 # Helper Functions
 # =============================================================================
@@ -892,100 +874,6 @@ def add_markdown_to_docx(doc, content):
             # Regular paragraph - remove bold markers
             text = re.sub(r'\*\*(.+?)\*\*', r'\1', stripped)
             doc.add_paragraph(text)
-
-
-def process_refinement_request(message, current_policy, config):
-    """Process a chat refinement request and return a response"""
-    message_lower = message.lower()
-
-    # Common refinement patterns
-    if 'simplify' in message_lower or 'simpler' in message_lower:
-        return {
-            'response': (
-                "I understand you'd like to simplify the policy. In a full implementation, "
-                "I would analyze the specific section you mentioned and provide a simplified version. "
-                "For now, consider these tips for simplification:\n\n"
-                "1. Replace technical jargon with plain language\n"
-                "2. Shorten sentences to 20 words or fewer\n"
-                "3. Use bullet points instead of long paragraphs\n"
-                "4. Remove redundant phrases\n\n"
-                "Would you like me to focus on a specific section?"
-            ),
-            'updatedPolicy': None,
-            'updatedHtml': None
-        }
-
-    elif 'detail' in message_lower or 'more about' in message_lower or 'expand' in message_lower:
-        return {
-            'response': (
-                "You'd like more detail added. In a full implementation, I would expand the "
-                "relevant section with additional specifics. Consider adding:\n\n"
-                "1. Specific procedures and workflows\n"
-                "2. Examples of compliant vs. non-compliant behavior\n"
-                "3. Timelines and deadlines\n"
-                "4. Responsible parties for each requirement\n\n"
-                "Which section would you like me to expand?"
-            ),
-            'updatedPolicy': None,
-            'updatedHtml': None
-        }
-
-    elif 'tone' in message_lower or 'formal' in message_lower or 'informal' in message_lower:
-        return {
-            'response': (
-                "I can help adjust the tone of the policy. Options include:\n\n"
-                "- More formal: Use passive voice, legal terminology, 'shall' instead of 'must'\n"
-                "- Less formal: Use active voice, conversational language, 'should' and 'will'\n"
-                "- Technical: Include more regulatory citations and technical standards\n"
-                "- Accessible: Plain language for general staff understanding\n\n"
-                "Which direction would you prefer?"
-            ),
-            'updatedPolicy': None,
-            'updatedHtml': None
-        }
-
-    elif 'remove' in message_lower or 'delete' in message_lower:
-        return {
-            'response': (
-                "I can help remove sections. To do this, please specify:\n\n"
-                "1. The exact section name or letter (e.g., 'Section A' or 'Data Privacy')\n"
-                "2. Or describe what content you'd like removed\n\n"
-                "Note: Removing core elements may leave gaps in your AI governance. "
-                "I'll let you know if a removal might create compliance issues."
-            ),
-            'updatedPolicy': None,
-            'updatedHtml': None
-        }
-
-    elif 'add' in message_lower or 'include' in message_lower:
-        return {
-            'response': (
-                "I can help add new content. Please specify:\n\n"
-                "1. What topic or requirement you'd like to add\n"
-                "2. Where in the document it should go\n"
-                "3. How detailed it should be\n\n"
-                "I can also suggest additions based on your organization type and "
-                "common gaps in AI policies."
-            ),
-            'updatedPolicy': None,
-            'updatedHtml': None
-        }
-
-    else:
-        return {
-            'response': (
-                "I'm here to help refine your policy. I can:\n\n"
-                "- Simplify language in specific sections\n"
-                "- Add more detail to requirements\n"
-                "- Adjust the tone (more/less formal)\n"
-                "- Remove or add sections\n"
-                "- Clarify specific terms or requirements\n\n"
-                "What would you like to change? Please be specific about which section "
-                "or aspect of the policy you'd like me to work on."
-            ),
-            'updatedPolicy': None,
-            'updatedHtml': None
-        }
 
 
 # =============================================================================

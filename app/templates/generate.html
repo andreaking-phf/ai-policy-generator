@@ -200,74 +200,9 @@
         margin-bottom: 0.75rem;
     }
 
-    /* Chat interface */
-    .chat-container {
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius);
-        overflow: hidden;
-        margin-top: 1rem;
-    }
-
-    .chat-header {
-        background: var(--primary-color);
-        color: white;
-        padding: 0.75rem 1rem;
-        font-weight: 600;
-    }
-
-    .chat-messages {
-        height: 300px;
-        overflow-y: auto;
-        padding: 1rem;
-        background: var(--bg-secondary);
-    }
-
-    .chat-message {
-        margin-bottom: 1rem;
-        padding: 0.75rem 1rem;
-        border-radius: var(--radius);
-        max-width: 85%;
-    }
-
-    .chat-message.user {
-        background: var(--primary-light);
-        margin-left: auto;
-    }
-
-    .chat-message.assistant {
-        background: white;
-        border: 1px solid var(--border-color);
-    }
-
-    .chat-message .sender {
-        font-weight: 600;
-        font-size: 0.8rem;
-        margin-bottom: 0.25rem;
-        color: var(--text-muted);
-    }
-
-    .chat-input-area {
-        display: flex;
-        gap: 0.5rem;
-        padding: 0.75rem;
-        border-top: 1px solid var(--border-color);
-        background: white;
-    }
-
-    .chat-input-area input {
-        flex: 1;
-        padding: 0.75rem;
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius);
-    }
-
-    .chat-input-area button {
-        padding: 0.75rem 1.5rem;
-    }
-
     /* Print styles for formal document */
     @media print {
-        .card, .page-header, .export-options, .chat-container {
+        .card, .page-header, .export-options {
             display: none !important;
         }
 
@@ -406,23 +341,6 @@
     </div>
 
     <div id="policyPreview" class="policy-document"></div>
-
-    <!-- Chat Interface for Refinement -->
-    <div class="chat-container" id="chatContainer">
-        <div class="chat-header">
-            Policy Refinement Assistant
-        </div>
-        <div class="chat-messages" id="chatMessages">
-            <div class="chat-message assistant">
-                <div class="sender">Assistant</div>
-                <div class="content">I can help you refine this policy. Ask me to simplify sections, add more detail, change the tone, or make other adjustments. What would you like to change?</div>
-            </div>
-        </div>
-        <div class="chat-input-area">
-            <input type="text" id="chatInput" placeholder="Type your request... (e.g., 'Simplify section A' or 'Add more detail about training')">
-            <button class="btn btn-primary" id="chatSendBtn">Send</button>
-        </div>
-    </div>
 </div>
 {% endblock %}
 
@@ -609,10 +527,6 @@ document.getElementById('printBtn').addEventListener('click', () => window.print
 document.getElementById('downloadMdBtn').addEventListener('click', downloadMarkdown);
 document.getElementById('downloadDocxBtn').addEventListener('click', downloadDocx);
 document.getElementById('saveDbBtn').addEventListener('click', saveToDatabase);
-document.getElementById('chatSendBtn').addEventListener('click', sendChatMessage);
-document.getElementById('chatInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') sendChatMessage();
-});
 
 async function loadPrioritization(id) {
     try {
@@ -826,62 +740,6 @@ async function downloadDocx() {
         document.getElementById('downloadDocxBtn').textContent = 'Download Word (.docx)';
         document.getElementById('downloadDocxBtn').disabled = false;
     }
-}
-
-// Chat interface
-async function sendChatMessage() {
-    const input = document.getElementById('chatInput');
-    const message = input.value.trim();
-    if (!message) return;
-
-    if (!generatedPolicy) {
-        alert('Please generate a policy first.');
-        return;
-    }
-
-    // Add user message to chat
-    addChatMessage('user', message);
-    input.value = '';
-
-    try {
-        const response = await fetch('/api/chat-refine', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: message,
-                currentPolicy: generatedPolicy.markdown,
-                config: generatedPolicy.config
-            })
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            addChatMessage('assistant', result.response);
-
-            // If policy was updated, refresh the preview
-            if (result.updatedPolicy) {
-                generatedPolicy.html = result.updatedHtml;
-                generatedPolicy.markdown = result.updatedPolicy;
-                document.getElementById('policyPreview').innerHTML = result.updatedHtml;
-            }
-        } else {
-            addChatMessage('assistant', 'Sorry, I encountered an error processing your request. Please try again.');
-        }
-    } catch (error) {
-        addChatMessage('assistant', 'Sorry, there was an error: ' + error.message);
-    }
-}
-
-function addChatMessage(role, content) {
-    const container = document.getElementById('chatMessages');
-    const div = document.createElement('div');
-    div.className = `chat-message ${role}`;
-    div.innerHTML = `
-        <div class="sender">${role === 'user' ? 'You' : 'Assistant'}</div>
-        <div class="content">${content}</div>
-    `;
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
 }
 </script>
 {% endblock %}
